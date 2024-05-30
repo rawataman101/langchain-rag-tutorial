@@ -1,11 +1,16 @@
 from langchain.document_loaders import DirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
-from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings import AzureOpenAIEmbeddings
 from langchain.vectorstores.chroma import Chroma
 import os
 import shutil
+from dotenv import load_dotenv
 
+load_dotenv()
+
+azure_openai_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+azure_openai_api_key = os.getenv("AZURE_OPENAI_API_KEY")
 CHROMA_PATH = "chroma"
 DATA_PATH = "data/books"
 
@@ -28,8 +33,8 @@ def load_documents():
 
 def split_text(documents: list[Document]):
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=300,
-        chunk_overlap=100,
+        chunk_size=1000,
+        chunk_overlap=500,
         length_function=len,
         add_start_index=True,
     )
@@ -50,7 +55,7 @@ def save_to_chroma(chunks: list[Document]):
 
     # Create a new DB from the documents.
     db = Chroma.from_documents(
-        chunks, OpenAIEmbeddings(), persist_directory=CHROMA_PATH
+        chunks, AzureOpenAIEmbeddings(), persist_directory=CHROMA_PATH
     )
     db.persist()
     print(f"Saved {len(chunks)} chunks to {CHROMA_PATH}.")

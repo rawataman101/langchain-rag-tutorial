@@ -1,9 +1,16 @@
 import argparse
 from dataclasses import dataclass
 from langchain.vectorstores.chroma import Chroma
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.chat_models import ChatOpenAI
+from langchain.embeddings import AzureOpenAIEmbeddings
+from langchain.chat_models import AzureChatOpenAI
 from langchain.prompts import ChatPromptTemplate
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+azure_openai_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+azure_openai_api_key = os.getenv("AZURE_OPENAI_API_KEY")
 
 CHROMA_PATH = "chroma"
 
@@ -19,6 +26,7 @@ Answer the question based on the above context: {question}
 
 
 def main():
+
     # Create CLI.
     parser = argparse.ArgumentParser()
     parser.add_argument("query_text", type=str, help="The query text.")
@@ -26,7 +34,7 @@ def main():
     query_text = args.query_text
 
     # Prepare the DB.
-    embedding_function = OpenAIEmbeddings()
+    embedding_function = AzureOpenAIEmbeddings()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
     # Search the DB.
@@ -40,7 +48,12 @@ def main():
     prompt = prompt_template.format(context=context_text, question=query_text)
     print(prompt)
 
-    model = ChatOpenAI()
+    model = AzureChatOpenAI(
+        temperature=0,  
+        model_name="gpt-35-turbo",
+        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"), 
+        api_version="2024-02-15-preview"
+    )
     response_text = model.predict(prompt)
 
     sources = [doc.metadata.get("source", None) for doc, _score in results]
